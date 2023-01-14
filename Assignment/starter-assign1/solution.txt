@@ -1,0 +1,2 @@
+proper divisors:    Vector(more fast)
+                    for(i)
