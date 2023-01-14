@@ -12,9 +12,22 @@
 #include "filelib.h"
 #include "simpio.h"
 #include "vector.h"
+#include "map.h"
+#include "set.h"
+#include <cctype>
 #include "SimpleTest.h" // IWYU pragma: keep (needed to quiet spurious warning)
 using namespace std;
 
+const int MAX_ENCODE_DIGIT = 6;
+const Map<int, Set<char>> ENCODE_TABLE = {
+    {0, {'a', 'e', 'i', 'o', 'u', 'h', 'w', 'y'}},
+    {1, {'b', 'f', 'p', 'v'}},
+    {2, {'c', 'g', 'j', 'k', 'q', 's', 'x', 'z'}},
+    {3, {'d', 't'}},
+    {4, {'l'}},
+    {5, {'m', 'n'}},
+    {6, {'r'}},
+};
 /* This function is intended to return a string which
  * includes only the letter characters from the original
  * (all non-letter characters are excluded)
@@ -26,8 +39,11 @@ using namespace std;
  * replace it with a description of the bug you fixed.
  */
 string lettersOnly(string s) {
-    string result = charToString(s[0]);
-    for (int i = 1; i < s.length(); i++) {
+    if (s.length() < 1) {
+        return "";
+    }
+    string result = "";
+    for (int i = 0; i < s.length(); i++) {
         if (isalpha(s[i])) {
             result += s[i];
         }
@@ -35,13 +51,66 @@ string lettersOnly(string s) {
     return result;
 }
 
+char encodeLitter(const char ch) {
+    for (int digit : ENCODE_TABLE) {
+        if (ENCODE_TABLE[digit].contains(tolower(ch))) {
+            return digit + '0';
+        }
+    }
+    return NULL;
+}
+
+void deduplication(string &s) {
+    for (int i = 0; i < s.length() - 1; ) {
+        if (s[i] == s[i + 1]) {
+            s.erase(i + 1, 1);
+        } else {
+            i++;
+        }
+    }
+}
+
+void removeZero(string &s) {
+    for (int i = 0; i < s.length();) {
+        if (s[i] == '0') {
+            s.erase(i, 1);
+        } else {
+            i++;
+        }
+    }
+}
+
+void encode(string &s) {
+    for (int i = 0; i < s.length(); i++) {
+        s[i] = encodeLitter(s[i]);
+    }
+}
+
+void ctrlLength(string &s) {
+    if (s.length() > 4) {
+        s.erase(4);
+    } else if (s.length() < 4) {
+        s += string(4 - s.length(), '0');
+    }
+}
 
 /* TODO: Replace this comment with a descriptive function
  * header comment.
  */
 string soundex(string s) {
     /* TODO: Fill in this function. */
-    return "";
+    string letterOnlyStr = lettersOnly(s);
+    if (letterOnlyStr.length() < 1) {
+        return "";
+    }
+
+    string firstLetter = toUpperCase(string(1, letterOnlyStr[0]));
+    encode(letterOnlyStr);
+    deduplication(letterOnlyStr);
+    letterOnlyStr[0] = firstLetter[0];
+    removeZero(letterOnlyStr);
+    ctrlLength(letterOnlyStr);
+    return letterOnlyStr;
 }
 
 
@@ -135,4 +204,16 @@ PROVIDED_TEST("Ashcraft is not a special case") {
 
 // TODO: add your test cases here
 
+STUDENT_TEST("test empty string or a string composed of only non-letter characters"
+             "or first character is non-letter") {
+    string s = "";
+    string result = lettersOnly(s);
+    EXPECT_EQUAL(result, "");
+    s = "789./-";
+    result = lettersOnly(s);
+    EXPECT_EQUAL(result, "");
+    s = "7tl dr";
+    result = lettersOnly(s);
+    EXPECT_EQUAL(result, "tldr");
 
+ }
